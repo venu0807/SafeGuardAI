@@ -6,22 +6,34 @@ import seaborn as sns
 
 from audio_loader import load_audio
 from mfcc_inference import mfcc_score
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 
-# CONFIG
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score
+)
+
+# ---------------- CONFIG ----------------
 TEST_DIR = "../tests"
 OUTPUT_DIR = "../docs"
+
 SPIKE_THRESHOLD = 0.25
 DISTRESS_THRESHOLD = 0.6
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+# ---------------------------------------
+
 y_true = []
 y_pred = []
+scores = []
+filenames = []
 
-print("Evaluating MFCC + CNN model...\n")
+print("\nRunning MFCC evaluation...\n")
 
-# NORMAL = 0, DISTRESS = 1
+# LOOP OVER LABELED DATA
 for label_name, true_label in [("normal", 0), ("distress", 1)]:
     folder = os.path.join(TEST_DIR, label_name)
 
@@ -35,61 +47,100 @@ for label_name, true_label in [("normal", 0), ("distress", 1)]:
         peak = np.max(np.abs(audio))
 
         if peak < SPIKE_THRESHOLD:
-            pred_label = 0
             score = 0.0
+            pred = 0
         else:
             score = mfcc_score(audio)
-            pred_label = 1 if score >= DISTRESS_THRESHOLD else 0
+            pred = 1 if score >= DISTRESS_THRESHOLD else 0
 
         y_true.append(true_label)
-        y_pred.append(pred_label)
+        y_pred.append(pred)
+        scores.append(score)
+        filenames.append(file)
 
-        print(f"{file:20s} | GT={true_label} | Pred={pred_label} | Score={score:.2f}")
+        print(
+            f"{file:20s} | GT={true_label} | "
+            f"Score={score:.2f} | Pred={pred}"
+        )
 
-# -----------------------------
-# METRICS
-# -----------------------------
+# ---------------- METRICS ----------------
 acc = accuracy_score(y_true, y_pred)
 prec = precision_score(y_true, y_pred)
 rec = recall_score(y_true, y_pred)
 f1 = f1_score(y_true, y_pred)
 
+print("\n=== METRICS ===")
+print(f"Accuracy : {acc:.3f}")
+print(f"Precision: {prec:.3f}")
+print(f"Recall   : {rec:.3f}")
+print(f"F1-score : {f1:.3f}")
+
 metrics_df = pd.DataFrame([{
     "Accuracy": acc,
     "Precision": prec,
     "Recall": rec,
-    "F1-Score": f1
+    "F1-score": f1
 }])
 
-metrics_df.to_csv(f"{OUTPUT_DIR}/metrics.csv", index=False)
+metrics_df.to_csv(
+    os.path.join(OUTPUT_DIR, "metrics.csv"),
+    index=False
+)
 
-print("\n=== METRICS ===")
-print(metrics_df)
-
-# -----------------------------
-# CONFUSION MATRIX
-# -----------------------------
+# -------- CONFUSION MATRIX (TABLE) -------
 cm = confusion_matrix(y_true, y_pred)
 
 cm_df = pd.DataFrame(
     cm,
-    index=["Actual Normal", "Actual Distress"],
-    columns=["Predicted Normal", "Predicted Distress"]
+    index=["Actual_Normal", "Actual_Distress"],
+    columns=["Pred_Normal", "Pred_Distress"]
 )
 
-cm_df.to_csv(f"{OUTPUT_DIR}/confusion_matrix.csv")
+cm_df.to_csv(
+    os.path.join(OUTPUT_DIR, "confusion_matrix.csv")
+)
 
-# HEATMAP
+# -------- CONFUSION MATRIX (HEATMAP) -----
 plt.figure(figsize=(5, 4))
 sns.heatmap(
-    cm_df,
+    cm,
     annot=True,
     fmt="d",
-    cmap="Blues"
+    cmap="Blues",
+    xticklabels=["Normal", "Distress"],
+    yticklabels=["Normal", "Distress"]
 )
-plt.title("Confusion Matrix – MFCC + CNN")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.title("Confusion Matrix")
 plt.tight_layout()
-plt.savefig(f"{OUTPUT_DIR}/confusion_matrix.png")
+plt.savefig(
+    os.path.join(OUTPUT_DIR, "confusion_matrix.png")
+)
 plt.close()
 
-print("\nConfusion matrix saved to docs/")
+# -------- SCORE DISTRIBUTION HEATMAP -----
+score_df = pd.DataFrame({
+    "Score": scores,
+    "True Label": y_true
+})
+
+plt.figure(figsize=(6, 4))
+sns.histplot(
+    data=score_df,
+    x="Score",
+    hue="True Label",
+    bins=10,
+    kde=True,
+    palette={0: "green", 1: "red"}
+)
+plt.xlabel("MFCC Distress Score")
+plt.title("Score Distribution Heatmap")
+plt.tight_layout()
+plt.savefig(
+    os.path.join(OUTPUT_DIR, "score_distribution.png")
+)
+plt.close()
+
+print("\nEvaluation complete.")
+print("Outputs saved in /docs/")
