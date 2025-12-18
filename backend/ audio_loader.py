@@ -2,7 +2,7 @@ import librosa
 import numpy as np
 
 SR = 16000
-SAMPLES = SR
+SAMPLES = SR  # 1 second
 
 def load_audio(path):
     audio, _ = librosa.load(path, sr=SR, mono=True)
