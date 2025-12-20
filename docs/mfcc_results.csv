@@ -1,2 +1,0 @@
-filename,peak_amplitude,mfcc_score,decision
-test_scream.wav,0.001838688738644123,0.0,SKIPPED_LOW_VOLUME

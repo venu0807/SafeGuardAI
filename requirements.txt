@@ -2,7 +2,7 @@ numpy
 librosa
 tensorflow
 soundfile
-pandas
 scikit-learn
 matplotlib
 seaborn
+pandas
