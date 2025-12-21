@@ -18,6 +18,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    aaptOptions {
+        noCompress += "tflite"
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -38,6 +42,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation("org.tensorflow:tensorflow-lite:2.13.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
