@@ -4,33 +4,19 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:background="#B00020">
-
-    <TextView
-        android:id="@+id/txtAlert"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="DISTRESS DETECTED"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF" />
+    android:padding="32dp">
 
     <TextView
         android:id="@+id/txtCountdown"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="SOS in 5"
-        android:textSize="22sp"
-        android:textColor="#FFFFFF"
-        android:layout_marginTop="20dp" />
+        android:text="Sending alert in 10s"
+        android:textSize="22sp"/>
 
     <Button
         android:id="@+id/btnCancel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="CANCEL"
-        android:layout_marginTop="40dp"
-        android:backgroundTint="#FFFFFF"
-        android:textColor="#B00020" />
-
+        android:text="Cancel Alert"
+        android:layout_marginTop="24dp"/>
 </LinearLayout>

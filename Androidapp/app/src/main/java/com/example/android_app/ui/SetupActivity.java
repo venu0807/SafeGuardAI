@@ -18,6 +18,8 @@ import com.example.android_app.R;
 public class SetupActivity extends AppCompatActivity {
 
     private static final int REQ_AUDIO = 1;
+    private static final int REQ_PERMS = 2;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,8 +37,13 @@ public class SetupActivity extends AppCompatActivity {
 
                 ActivityCompat.requestPermissions(
                         this,
-                        new String[]{Manifest.permission.RECORD_AUDIO},
-                        REQ_AUDIO
+                        new String[]{
+                                Manifest.permission.RECORD_AUDIO,
+                                Manifest.permission.CALL_PHONE,
+                                Manifest.permission.SEND_SMS,
+                                Manifest.permission.ACCESS_FINE_LOCATION
+                        },
+                        REQ_PERMS
                 );
                 return;
             }

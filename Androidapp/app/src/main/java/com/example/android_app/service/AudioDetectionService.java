@@ -122,6 +122,13 @@ public class AudioDetectionService extends Service {
                     if (event.type ==
                             TemporalEventDetector.EventType.DISTRESS_EVENT_START) {
 
+                        Intent alert = new Intent(
+                                this,
+                                com.example.android_app.ui.AlertActivity.class
+                        );
+                        alert.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(alert);
+
                         Log.w("SAFEGUARD_EVENT",
                                 "DISTRESS_EVENT_START confidence=" +
                                         event.confidence);
