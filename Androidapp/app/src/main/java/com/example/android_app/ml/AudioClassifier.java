@@ -1,6 +1,7 @@
 package com.example.android_app.ml;
 
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -22,35 +23,42 @@ public class AudioClassifier {
     }
 
     private MappedByteBuffer loadModel(Context context) throws IOException {
-        FileInputStream fis =
-                new FileInputStream(context.getAssets()
-                        .openFd("mfcc_audio_model.tflite")
-                        .getFileDescriptor());
+        AssetFileDescriptor afd =
+                context.getAssets().openFd("mfcc_audio_model.tflite");
 
+        FileInputStream fis = new FileInputStream(afd.getFileDescriptor());
         FileChannel channel = fis.getChannel();
-        long startOffset = context.getAssets()
-                .openFd("mfcc_audio_model.tflite")
-                .getStartOffset();
-        long declaredLength = context.getAssets()
-                .openFd("mfcc_audio_model.tflite")
-                .getDeclaredLength();
 
         return channel.map(
                 FileChannel.MapMode.READ_ONLY,
-                startOffset,
-                declaredLength
+                afd.getStartOffset(),
+                afd.getDeclaredLength()
         );
     }
 
-    public float predict(short[] audio) {
-        float[] mfcc = MFCCExtractor.extract(audio);
 
-        float[][] input = new float[1][mfcc.length];
-        System.arraycopy(mfcc, 0, input[0], 0, mfcc.length);
+    public float predict(short[] audio) {
+
+        float[] mfccFlat = MFCCExtractor.extract(audio);
+
+        final int TIME = 120;
+        final int MFCC = 101;
+
+        // 4D input tensor: [1, 120, 101, 1]
+        float[][][][] input = new float[1][TIME][MFCC][1];
+
+        int idx = 0;
+        for (int t = 0; t < TIME; t++) {
+            for (int m = 0; m < MFCC; m++) {
+                input[0][t][m][0] = mfccFlat[idx++];
+            }
+        }
 
         float[][] output = new float[1][1];
         tflite.run(input, output);
 
         return output[0][0];
     }
+
+
 }

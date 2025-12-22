@@ -7,6 +7,7 @@ android {
     compileSdk {
         version = release(36)
     }
+    sourceSets["main"].assets.srcDirs("src/main/assets")
 
     defaultConfig {
         applicationId = "com.example.android_app"
