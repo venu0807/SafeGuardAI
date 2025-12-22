@@ -1,12 +1,10 @@
 package com.example.android_app.ml;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
 
 import org.tensorflow.lite.Interpreter;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -22,35 +20,46 @@ public class AudioClassifier {
         }
     }
 
-    private MappedByteBuffer loadModel(Context context) throws IOException {
-        AssetFileDescriptor afd =
-                context.getAssets().openFd("mfcc_audio_model.tflite");
+    private MappedByteBuffer loadModel(Context context) throws Exception {
 
-        FileInputStream fis = new FileInputStream(afd.getFileDescriptor());
+        FileInputStream fis = new FileInputStream(
+                context.getAssets()
+                        .openFd("mfcc_audio_model.tflite")
+                        .getFileDescriptor()
+        );
+
         FileChannel channel = fis.getChannel();
+        long start = context.getAssets()
+                .openFd("mfcc_audio_model.tflite")
+                .getStartOffset();
+        long length = context.getAssets()
+                .openFd("mfcc_audio_model.tflite")
+                .getDeclaredLength();
 
         return channel.map(
                 FileChannel.MapMode.READ_ONLY,
-                afd.getStartOffset(),
-                afd.getDeclaredLength()
+                start,
+                length
         );
     }
 
-
     public float predict(short[] audio) {
 
-        float[] mfccFlat = MFCCExtractor.extract(audio);
+        float[][] mfcc2D = MFCCExtractor.extract2D(audio);
 
-        final int TIME = 120;
-        final int MFCC = 101;
+        int nMfcc = mfcc2D.length;
+        int nFrames = mfcc2D[0].length;
 
-        // 4D input tensor: [1, 120, 101, 1]
-        float[][][][] input = new float[1][TIME][MFCC][1];
+        float[][][][] input =
+                new float[1][nMfcc][nFrames][1];
 
-        int idx = 0;
-        for (int t = 0; t < TIME; t++) {
-            for (int m = 0; m < MFCC; m++) {
-                input[0][t][m][0] = mfccFlat[idx++];
+        for (int i = 0; i < nMfcc; i++) {
+            for (int j = 0; j < nFrames; j++) {
+                float v = mfcc2D[i][j];
+                if (Float.isNaN(v) || Float.isInfinite(v)) {
+                    throw new IllegalStateException("Invalid MFCC");
+                }
+                input[0][i][j][0] = v;
             }
         }
 
@@ -59,6 +68,4 @@ public class AudioClassifier {
 
         return output[0][0];
     }
-
-
 }

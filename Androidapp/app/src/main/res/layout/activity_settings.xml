@@ -1,0 +1,27 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/edtPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Emergency contact"
+        android:inputType="phone"/>
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btnDisable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Disable Protection"
+        android:layout_marginTop="32dp"/>
+</LinearLayout>
