@@ -1,8 +1,8 @@
-from backend.utils.audio_loader import load_audio
-from backend.inference.mfcc_gate_inference import MFCCGate
-from backend.fusion.temporal_gate import TemporalGate
-from backend.fusion.fusion_engine import FusionEngine
-from backend.fusion.decision_engine import DecisionEngine
+from backend.src.utils.audio_loader import load_audio
+from backend.src.inference.mfcc_gate_inference import MFCCGate
+from backend.src.fusion.temporal_gate import TemporalGate
+from backend.src.fusion.fusion_engine import FusionEngine
+from backend.src.fusion.decision_engine import DecisionEngine
 from backend.config import MFCC_MODEL_PATH
 
 

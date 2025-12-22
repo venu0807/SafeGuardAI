@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from backend.preprocessing.audio_prefilter import audio_prefilter
-from backend.preprocessing.mfcc_features import extract_mfcc
+from backend.src.preprocessing.audio_prefilter import audio_prefilter
+from backend.src.preprocessing.mfcc_features import extract_mfcc
 
 class MFCCGate:
     def __init__(self, model_path):

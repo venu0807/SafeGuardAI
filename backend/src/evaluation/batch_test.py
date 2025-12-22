@@ -9,8 +9,8 @@ from sklearn.metrics import (
     precision_recall_fscore_support
 )
 
-from backend.utils.audio_loader import load_audio
-from backend.inference.mfcc_gate_inference import MFCCGate
+from backend.src.utils.audio_loader import load_audio
+from backend.src.inference.mfcc_gate_inference import MFCCGate
 from backend.config import MFCC_MODEL_PATH
 
 NORMAL_DIR = "tests/normal"

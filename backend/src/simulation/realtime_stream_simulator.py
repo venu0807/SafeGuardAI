@@ -1,11 +1,12 @@
 import time
 import librosa
 import numpy as np
+import os
 
-from backend.inference.mfcc_gate_inference import MFCCGate
-from backend.fusion.temporal_gate import TemporalGate
-from backend.fusion.fusion_engine import FusionEngine
-from backend.fusion.decision_engine import DecisionEngine
+from backend.src.inference.mfcc_gate_inference import MFCCGate
+from backend.src.fusion.temporal_gate import TemporalGate
+from backend.src.fusion.fusion_engine import FusionEngine
+from backend.src.fusion.decision_engine import DecisionEngine
 from backend.config import MFCC_MODEL_PATH
 
 # ---------------------------------------------------
@@ -16,7 +17,11 @@ WINDOW_SIZE = 16000        # 1 second
 HOP_SIZE = 8000            # 0.5 second overlap
 SLEEP_TIME = 0.5           # simulate live stream
 
-TEST_AUDIO_PATH = "tests/test_scream.wav"
+TEST_AUDIO_PATH = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "tests", "test_scream.wav")
+)
+
+
 
 # ---------------------------------------------------
 # LOAD TEST AUDIO
