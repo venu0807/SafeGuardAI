@@ -22,7 +22,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.example.android.R;
 import com.example.android.adapters.EmergencyContactsAdapter;
 import com.example.android.models.EmergencyContact;
@@ -37,8 +37,9 @@ public class EmergencyContactsActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private EmergencyContactsAdapter adapter;
-    private TextView emptyView;
-    private FloatingActionButton fabAdd;
+    private View emptyView; // Changed from TextView to View to support the new LinearLayout structure
+    private ExtendedFloatingActionButton fabAdd; // Updated to match the new Material 3 UI
+    private AlertDialog activeDialog; 
 
     private List<EmergencyContact> contacts;
 
@@ -65,23 +66,42 @@ public class EmergencyContactsActivity extends AppCompatActivity {
 
     private void initializeViews() {
         recyclerView = findViewById(R.id.rv_contacts);
-        emptyView = findViewById(R.id.empty_view);
+        emptyView = findViewById(R.id.empty_view); // This is now a LinearLayout in XML
         fabAdd = findViewById(R.id.fab_add_contact);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 
     private void loadContacts() {
-        contacts = EmergencyHelper.getEmergencyContacts(this);
-        adapter = new EmergencyContactsAdapter(contacts, new EmergencyContactsAdapter.ContactClickListener() {
-            @Override
-            public void onEditClick(int position) { showEditContactDialog(position); }
-            @Override
-            public void onDeleteClick(int position) { showDeleteConfirmationDialog(position); }
-            @Override
-            public void onCallClick(int position) { makePhoneCall(contacts.get(position).getPhoneNumber()); }
-        });
-        recyclerView.setAdapter(adapter);
-        updateEmptyView();
+        try {
+            contacts = EmergencyHelper.getEmergencyContacts(this);
+            if (contacts == null) {
+                contacts = new java.util.ArrayList<>();
+            }
+            adapter = new EmergencyContactsAdapter(contacts, new EmergencyContactsAdapter.ContactClickListener() {
+                @Override
+                public void onEditClick(int position) { 
+                    if (position >= 0 && position < contacts.size()) {
+                        showEditContactDialog(position);
+                    }
+                }
+                @Override
+                public void onDeleteClick(int position) { 
+                    if (position >= 0 && position < contacts.size()) {
+                        showDeleteConfirmationDialog(position);
+                    }
+                }
+                @Override
+                public void onCallClick(int position) { 
+                    if (position >= 0 && position < contacts.size()) {
+                        makePhoneCall(contacts.get(position).getPhoneNumber());
+                    }
+                }
+            });
+            recyclerView.setAdapter(adapter);
+            updateEmptyView();
+        } catch (Exception e) {
+            android.util.Log.e("EmergencyContacts", "Error loading contacts", e);
+        }
     }
 
     private void setupListeners() {
@@ -89,7 +109,8 @@ public class EmergencyContactsActivity extends AppCompatActivity {
     }
 
     private void showAddContactOptions() {
-        new AlertDialog.Builder(this)
+        dismissActiveDialog();
+        activeDialog = new AlertDialog.Builder(this)
                 .setTitle("Add Contact")
                 .setItems(new String[]{"Manual Entry", "Select from Contacts"}, (d, w) -> {
                     if (w == 0) showAddContactDialog(); else pickContactFromPhoneBook();
@@ -97,12 +118,13 @@ public class EmergencyContactsActivity extends AppCompatActivity {
     }
 
     private void showAddContactDialog() {
+        dismissActiveDialog();
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_contact, null);
         EditText nameIn = view.findViewById(R.id.input_name);
         EditText phoneIn = view.findViewById(R.id.input_phone);
         EditText relIn = view.findViewById(R.id.input_relationship);
 
-        new AlertDialog.Builder(this)
+        activeDialog = new AlertDialog.Builder(this)
                 .setTitle("Add Emergency Contact").setView(view)
                 .setPositiveButton("Add", (d, w) -> {
                     String n = nameIn.getText().toString().trim();
@@ -110,15 +132,18 @@ public class EmergencyContactsActivity extends AppCompatActivity {
                     String r = relIn.getText().toString().trim();
                     if (validateContact(n, p)) {
                         EmergencyContact contact = new EmergencyContact(n, p, r);
-                        contacts.add(contact);
-                        EmergencyHelper.saveEmergencyContacts(this, contacts);
-                        adapter.notifyDataSetChanged();
-                        updateEmptyView();
+                        if (EmergencyHelper.addEmergencyContact(this, contact)) {
+                            contacts.add(contact);
+                            adapter.notifyDataSetChanged();
+                            updateEmptyView();
+                        }
+                        dismissActiveDialog();
                     }
-                }).setNegativeButton("Cancel", null).show();
+                }).setNegativeButton("Cancel", (d, w) -> dismissActiveDialog()).show();
     }
 
     private void showEditContactDialog(int position) {
+        dismissActiveDialog();
         EmergencyContact c = contacts.get(position);
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_contact, null);
         EditText nameIn = view.findViewById(R.id.input_name);
@@ -129,29 +154,36 @@ public class EmergencyContactsActivity extends AppCompatActivity {
         phoneIn.setText(c.getPhoneNumber());
         relIn.setText(c.getRelationship());
 
-        new AlertDialog.Builder(this)
+        activeDialog = new AlertDialog.Builder(this)
                 .setTitle("Edit Contact").setView(view)
                 .setPositiveButton("Save", (d, w) -> {
                     String n = nameIn.getText().toString().trim();
                     String p = phoneIn.getText().toString().trim();
                     String r = relIn.getText().toString().trim();
                     if (validateContact(n, p)) {
-                        c.setName(n); c.setPhoneNumber(p); c.setRelationship(r);
-                        EmergencyHelper.saveEmergencyContacts(this, contacts);
-                        adapter.notifyItemChanged(position);
+                        c.setName(n);
+                        c.setPhoneNumber(p);
+                        c.setRelationship(r);
+                        if (EmergencyHelper.saveEmergencyContacts(this, contacts)) {
+                            adapter.notifyItemChanged(position);
+                        }
+                        dismissActiveDialog();
                     }
-                }).setNegativeButton("Cancel", null).show();
+                }).setNegativeButton("Cancel", (d, w) -> dismissActiveDialog()).show();
     }
 
     private void showDeleteConfirmationDialog(int position) {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete Contact").setMessage("Are you sure?")
+        dismissActiveDialog();
+        activeDialog = new AlertDialog.Builder(this)
+                .setTitle("Delete Contact")
+                .setMessage("Are you sure you want to delete this contact?")
                 .setPositiveButton("Delete", (d, w) -> {
                     contacts.remove(position);
-                    EmergencyHelper.saveEmergencyContacts(this, contacts);
-                    adapter.notifyDataSetChanged();
-                    updateEmptyView();
-                }).setNegativeButton("Cancel", null).show();
+                    if (EmergencyHelper.saveEmergencyContacts(this, contacts)) {
+                        adapter.notifyDataSetChanged();
+                        updateEmptyView();
+                    }
+                }).setNegativeButton("Cancel", (d, w) -> dismissActiveDialog()).show();
     }
 
     private void pickContactFromPhoneBook() {
@@ -186,23 +218,30 @@ public class EmergencyContactsActivity extends AppCompatActivity {
     }
 
     private void showAddContactWithDetails(String name, String phone) {
+        dismissActiveDialog();
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_contact, null);
         EditText nIn = view.findViewById(R.id.input_name);
         EditText pIn = view.findViewById(R.id.input_phone);
-        nIn.setText(name); pIn.setText(phone);
+        EditText rIn = view.findViewById(R.id.input_relationship);
+        nIn.setText(name);
+        pIn.setText(phone);
 
-        new AlertDialog.Builder(this)
+        activeDialog = new AlertDialog.Builder(this)
                 .setTitle("Add Contact").setView(view)
                 .setPositiveButton("Add", (d, w) -> {
                     String finalName = nIn.getText().toString().trim();
                     String finalPhone = pIn.getText().toString().trim();
+                    String finalRel = rIn.getText().toString().trim();
                     if (validateContact(finalName, finalPhone)) {
-                        contacts.add(new EmergencyContact(finalName, finalPhone, ""));
-                        EmergencyHelper.saveEmergencyContacts(this, contacts);
-                        adapter.notifyDataSetChanged();
-                        updateEmptyView();
+                        EmergencyContact contact = new EmergencyContact(finalName, finalPhone, finalRel);
+                        if (EmergencyHelper.addEmergencyContact(this, contact)) {
+                            contacts.add(contact);
+                            adapter.notifyDataSetChanged();
+                            updateEmptyView();
+                        }
+                        dismissActiveDialog();
                     }
-                }).setNegativeButton("Cancel", null).show();
+                }).setNegativeButton("Cancel", (d, w) -> dismissActiveDialog()).show();
     }
 
     private boolean validateContact(String name, String phone) {
@@ -222,8 +261,25 @@ public class EmergencyContactsActivity extends AppCompatActivity {
     }
 
     private void updateEmptyView() {
-        emptyView.setVisibility(contacts.isEmpty() ? View.VISIBLE : View.GONE);
-        recyclerView.setVisibility(contacts.isEmpty() ? View.GONE : View.VISIBLE);
+        if (emptyView != null) {
+            emptyView.setVisibility(contacts.isEmpty() ? View.VISIBLE : View.GONE);
+        }
+        if (recyclerView != null) {
+            recyclerView.setVisibility(contacts.isEmpty() ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private void dismissActiveDialog() {
+        if (activeDialog != null && activeDialog.isShowing()) {
+            activeDialog.dismiss();
+            activeDialog = null;
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        dismissActiveDialog();
+        super.onDestroy();
     }
 
     @Override

@@ -41,14 +41,25 @@ public class EmergencyHelper {
     }
 
     /**
-     * Save emergency contacts
+     * Save emergency contacts (synchronous)
      */
-    public static void saveEmergencyContacts(Context context, List<EmergencyContact> contacts) {
-        SharedPreferences.Editor editor = getPrefs(context).edit();
-        Gson gson = new Gson();
-        String json = gson.toJson(contacts);
-        editor.putString(KEY_CONTACTS, json);
-        editor.apply();
+    public static boolean saveEmergencyContacts(Context context, List<EmergencyContact> contacts) {
+        try {
+            SharedPreferences.Editor editor = getPrefs(context).edit();
+            Gson gson = new Gson();
+            String json = gson.toJson(contacts);
+            editor.putString(KEY_CONTACTS, json);
+            boolean success = editor.commit(); // Synchronous save
+            if (success) {
+                Log.d(TAG, "Contacts saved successfully: " + contacts.size() + " contacts");
+            } else {
+                Log.e(TAG, "Failed to save contacts");
+            }
+            return success;
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving contacts: " + e.getMessage(), e);
+            return false;
+        }
     }
 
     /**
@@ -66,10 +77,19 @@ public class EmergencyHelper {
     /**
      * Add emergency contact
      */
-    public static void addEmergencyContact(Context context, EmergencyContact contact) {
-        List<EmergencyContact> contacts = getEmergencyContacts(context);
-        contacts.add(contact);
-        saveEmergencyContacts(context, contacts);
+    public static boolean addEmergencyContact(Context context, EmergencyContact contact) {
+        try {
+            List<EmergencyContact> contacts = getEmergencyContacts(context);
+            contacts.add(contact);
+            boolean success = saveEmergencyContacts(context, contacts);
+            if (success) {
+                Log.d(TAG, "Contact added: " + contact.getName());
+            }
+            return success;
+        } catch (Exception e) {
+            Log.e(TAG, "Error adding contact: " + e.getMessage(), e);
+            return false;
+        }
     }
 
     /**
